@@ -31,5 +31,5 @@ class Core:
     def load_model(self):
         print("")
 
-core = Core("localhost",9000,"\\Device\\NPF_{5C19BF9B-2A9D-45C2-B292-07C140E6EF3F}")
+core = Core("localhost",9000,"en0")
 core.run()

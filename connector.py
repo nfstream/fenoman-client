@@ -7,7 +7,7 @@ class Connector:
         self.interface = interface
         self.flows = []
 
-    async def subscribe(self):
+    def subscribe(self):
         #Communication with the server
 
         #Start the flow
@@ -15,7 +15,7 @@ class Connector:
         dp = DataProcessor(interface=self.interface)
 
         while self.running:
-            flow = await dp.process()
+            flow = dp.process()
             flow_record = open("flow_record.txt", "a")
             flow_record.write(flow)
             flow_record.close()
