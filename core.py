@@ -1,6 +1,6 @@
 from connector import Connector
 from model import Model
-import asyncio
+import threading
 
 class Core:
 
@@ -13,7 +13,8 @@ class Core:
         self.create_connection()
 
         connector = Connector(interface=self.interface)
-        asyncio.run(connector.subscribe())
+        connectorThread = threading.Thread(connector.subscribe())
+        connectorThread.run()
 
         model = Model()
 
