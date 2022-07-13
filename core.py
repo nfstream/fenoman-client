@@ -1,35 +1,21 @@
-from connector import Connector
-from model import Model
-import threading
+from data_processor.data_processor import data_processor
+from model.model import nfstream_client
+import flwr as fl
+import pathlib
 
-class Core:
 
-    def __init__(self, ip = "", port = 9000, interface = ""):
-        self.server_ip = ip
-        self.server_port = port
-        self.interface = interface
+def main():
+    (x_train, y_train), (x_test, y_test) = data_processor.load_partition(...)
 
-    def run(self):
-        self.create_connection()
+    # Start Flower client
+    client = nfstream_client(model, x_train, y_train, x_test, y_test)
 
-        connector = Connector(interface=self.interface)
-        connectorThread = threading.Thread(connector.subscribe())
-        connectorThread.run()
+    fl.client.start_numpy_client(
+        server_address="localhost:8080",
+        client=client,
+        root_certificates=pathlib.Path("certificates/ca.crt").read_bytes(),
+    )
 
-        model = Model()
 
-        #Implement ctrl + c to turn off app here
-        while True:
-            if len(connector.flows) > 10:
-                model.predict(connector.flows)
-                connector.flows.clear()
-
-    def create_connection(self):
-        print("Creation connection with " + self.server_ip + ":" + str(self.server_port))
-        #Rest API querrys come here
-
-    def load_model(self):
-        print("")
-
-core = Core("localhost",9000,"en0")
-core.run()
+if __name__ == '__main__':
+    main()
