@@ -8,7 +8,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.layers import StringLookup
 #from patterns.singleton import singleton
 
-#TODO : singleton issue with python 3.9? or win11?
+#TODO : havent checked if it works with singleton yet
 #@singleton
 class NeuralDecisionTree(keras.Model):
     def __init__(self, depth, num_features, used_features_rate, num_classes):
@@ -79,7 +79,6 @@ class NeuralDecisionTree(keras.Model):
 
 """ ----------------- Functions for setting up the decision tree ----------------- """
 
-#TODO : This part messes up the federated learning (map(lambda features, target: (features, target_label_lookup(target))))
 target_label_lookup = StringLookup(
     vocabulary=headers.TARGET_LABELS, mask_token=None, num_oov_indices=1
 )
