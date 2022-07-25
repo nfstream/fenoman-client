@@ -99,10 +99,10 @@ def main():
         model.decision_tree_model.test(trained_model, test_data)
 
         #Pushing new model to the server
-        push_model(trained_model)
+        #push_model(trained_model)
 
         #Pushing the model weights to the server
-        push_weights(trained_model)
+        #push_weights(trained_model)
 
 
 
