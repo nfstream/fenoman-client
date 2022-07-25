@@ -6,8 +6,11 @@ import numpy as np
 csv = pd.read_csv("model/comnet14-flows.csv")
 csv = csv.iloc[: , :-5]
 df_split = np.array_split(csv,16)
-train_data = df_split[4]
+train_data = df_split[1]
 test_data = df_split[4]
+
+#The data with what we want to teach our model
+transfer_data = df_split[5]
 
 CSV_HEADER = [
             "id",
@@ -226,3 +229,4 @@ label = "application_name"
 classes = train_data[label].unique().tolist()
 print(f"Label classes: {classes}")
 TARGET_LABELS = classes
+#TARGET_LABELS = ['RDP', 'NTP', 'NetBIOS', 'HTTP.Google', 'DNS.WindowsUpdate']

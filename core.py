@@ -1,3 +1,5 @@
+from os.path import exists
+
 import numpy as np
 import pandas as pd
 
@@ -10,6 +12,20 @@ import requests
 import json
 import keras
 import model.headers
+
+def init_connection():
+    identifier = 0
+    if exists("configuration/identifier.txt"):
+        with open("configuration/identifier.txt") as f:
+            identifier = int(f.read())
+    else:
+        req = requests.get("http://147.232.207.111:80/register")
+        identifier = int(req.text)
+        with open("configuration/identifier.txt", "w") as f:
+            f.write(req.text)
+
+    return identifier
+
 
 def download_file(url, fname):
     local_filename = url.split('/')[-1]
@@ -57,6 +73,8 @@ def push_weights(trained_model):
 
 
 def main():
+    identifier = init_connection()
+
     data = [] #Should be loaded from Nfstream generated csv
     treshold = 0 #The minimum size of the csv, that is sufficient to train the model
     if(len(data) >= treshold):
@@ -67,22 +85,24 @@ def main():
     SimonSaysYes = True
     if (SimonSaysYes):
         raw_model = load_server_model()
-
+        print("Server model loaded")
         #To be deleted
         test_data = model.headers.test_data
-        model.decision_tree_model.test(raw_model, test_data)
+        #model.decision_tree_model.test(raw_model, test_data)
 
-        train_data = model.headers.train_data
+        print("Transfer training:")
+        train_data = model.headers.transfer_data
         trained_model = model.decision_tree_model.train(raw_model, train_data)
 
+        print("Testing trained model:")
         #To be deleted
-        model.decision_tree_model.test(raw_model, test_data)
+        model.decision_tree_model.test(trained_model, test_data)
 
         #Pushing new model to the server
-        #push_model(trained_model)
+        push_model(trained_model)
 
         #Pushing the model weights to the server
-        #push_weights(trained_model)
+        push_weights(trained_model)
 
 
 

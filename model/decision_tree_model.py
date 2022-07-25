@@ -21,6 +21,9 @@ class NeuralDecisionTree(keras.Model):
         self.num_leaves = 2 ** depth
         self.num_classes = num_classes
 
+        self.features = features
+        self.inputs = inputs
+
         # Create a mask for the randomly selected features.
         num_used_features = int(num_features * used_features_rate)
         one_hot = np.eye(num_features)
@@ -160,14 +163,14 @@ num_classes = len(TARGET_LABELS) + 1  # +1 sometimes it has problem that len(Tar
 
 
 def create_tree_model():
-    inputs = create_model_inputs()
-    features = encode_inputs(inputs)
-    features = layers.BatchNormalization()(features)
+    #inputs = create_model_inputs()
+    #features = encode_inputs(inputs)
+    #features = layers.BatchNormalization()(features)
 
     tree = NeuralDecisionTree()
 
-    outputs = tree(features)
-    model = keras.Model(inputs=inputs, outputs=outputs)
+    outputs = tree(tree.features)
+    model = keras.Model(inputs=tree.inputs, outputs=outputs)
     return model
 
 
@@ -193,14 +196,11 @@ def train(model, train_data):
     model.fit(train_dataset, epochs=num_epochs)
     print("Model training finished")
 
+    return model
+
 
 def test(model, test_data):
     """Evaluate the network on the entire test set."""
-    model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
-        loss=keras.losses.SparseCategoricalCrossentropy(),
-        metrics=[keras.metrics.SparseCategoricalAccuracy()],
-    )
 
     print("Evaluating the model on the test data...")
 
