@@ -1,3 +1,9 @@
 typing
 flwr
 nfstream
+requests
+keras
+tensorflow
+numpy
+pandas
+json

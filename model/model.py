@@ -1,7 +1,6 @@
 from patterns.singleton import singleton
 import flwr as fl
-import decision_tree_model
-
+import model.decision_tree_model
 
 @singleton
 class NFStreamClient(fl.client.NumPyClient):

@@ -1,18 +1,22 @@
 import math
-import headers
+from model.headers import TARGET_LABELS, CSV_HEADER, COLUMN_DEFAULTS, CATEGORICAL_FEATURE_NAMES, TARGET_FEATURE_NAME, NUMERIC_FEATURE_NAMES, FEATURE_NAMES, CATEGORICAL_FEATURES_WITH_VOCABULARY
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.layers import StringLookup
+from keras import layers
+from keras.layers import StringLookup
 #from patterns.singleton import singleton
 
-#TODO : havent checked if it works with singleton yet
-#@singleton
+
 class NeuralDecisionTree(keras.Model):
-    def __init__(self, depth, num_features, used_features_rate, num_classes):
+    def __init__(self):
         super(NeuralDecisionTree, self).__init__()
+        inputs = create_model_inputs()
+        features = encode_inputs(inputs)
+        features = layers.BatchNormalization()(features)
+        num_features = features.shape[1]
+
         self.depth = depth
         self.num_leaves = 2 ** depth
         self.num_classes = num_classes
@@ -64,8 +68,8 @@ class NeuralDecisionTree(keras.Model):
             mu = tf.reshape(mu, [batch_size, -1, 1])  # [batch_size, 2 ** level, 1]
             mu = tf.tile(mu, (1, 1, 2))  # [batch_size, 2 ** level, 2]
             level_decisions = decisions[
-                :, begin_idx:end_idx, :
-            ]  # [batch_size, 2 ** level, 2]
+                              :, begin_idx:end_idx, :
+                              ]  # [batch_size, 2 ** level, 2]
             mu = mu * level_decisions  # [batch_size, 2**level, 2]
             begin_idx = end_idx
             end_idx = begin_idx + 2 ** (level + 1)
@@ -80,27 +84,29 @@ class NeuralDecisionTree(keras.Model):
 """ ----------------- Functions for setting up the decision tree ----------------- """
 
 target_label_lookup = StringLookup(
-    vocabulary=headers.TARGET_LABELS, mask_token=None, num_oov_indices=1
+    vocabulary=TARGET_LABELS, mask_token=None, num_oov_indices=1
 )
+
 
 def get_dataset_from_csv(csv_file_path, shuffle=False, batch_size=128):
     dataset = tf.data.experimental.make_csv_dataset(
         csv_file_path,
         batch_size=batch_size,
-        column_names=headers.CSV_HEADER,
-        column_defaults=headers.COLUMN_DEFAULTS,
-        label_name=headers.TARGET_FEATURE_NAME,
+        column_names=CSV_HEADER,
+        column_defaults=COLUMN_DEFAULTS,
+        label_name=TARGET_FEATURE_NAME,
         num_epochs=1,
         header=False,
         na_value="?",
         shuffle=shuffle,
     ).map(lambda features, target: (features, target_label_lookup(target)))
-    return dataset#.cache()
+    return dataset.cache()
+
 
 def create_model_inputs():
     inputs = {}
-    for feature_name in headers.FEATURE_NAMES:
-        if feature_name in headers.NUMERIC_FEATURE_NAMES:
+    for feature_name in FEATURE_NAMES:
+        if feature_name in NUMERIC_FEATURE_NAMES:
             inputs[feature_name] = layers.Input(
                 name=feature_name, shape=(), dtype=tf.float32
             )
@@ -110,11 +116,12 @@ def create_model_inputs():
             )
     return inputs
 
+
 def encode_inputs(inputs):
     encoded_features = []
     for feature_name in inputs:
-        if feature_name in headers.CATEGORICAL_FEATURE_NAMES:
-            vocabulary = headers.CATEGORICAL_FEATURES_WITH_VOCABULARY[feature_name]
+        if feature_name in CATEGORICAL_FEATURE_NAMES:
+            vocabulary = CATEGORICAL_FEATURES_WITH_VOCABULARY[feature_name]
             # Create a lookup to convert a string values to an integer indices.
             # Since we are not using a mask token, nor expecting any out of vocabulary
             # (oov) token, we set mask_token to None and num_oov_indices to 0.
@@ -141,31 +148,30 @@ def encode_inputs(inputs):
     encoded_features = layers.concatenate(encoded_features)
     return encoded_features
 
+
 """Params"""
 learning_rate = 0.01
 batch_size = 265
-num_epochs = 5
+num_epochs = 1
 hidden_units = [64, 64]
 depth = 10
 used_features_rate = 1.0
-num_classes = len(headers.TARGET_LABELS)+1 #+1 sometimes it has problem that len(Target) can't fit into [ 0; len(Target) )
+num_classes = len(TARGET_LABELS) + 1  # +1 sometimes it has problem that len(Target) can't fit into [ 0; len(Target) )
 
 
 def create_tree_model():
     inputs = create_model_inputs()
     features = encode_inputs(inputs)
     features = layers.BatchNormalization()(features)
-    num_features = features.shape[1]
 
-    tree = NeuralDecisionTree(depth, num_features, used_features_rate, num_classes)
+    tree = NeuralDecisionTree()
 
     outputs = tree(features)
     model = keras.Model(inputs=inputs, outputs=outputs)
     return model
 
 
-  
-#TODO : We might not want to save csv-s to every endpoint? Or just delete them after the training is done
+# TODO : We might not want to save csv-s to every endpoint? Or just delete them after the training is done
 def train(model, train_data):
     """Train the network on the training set."""
     model.compile(
@@ -188,10 +194,13 @@ def train(model, train_data):
     print("Model training finished")
 
 
-
 def test(model, test_data):
     """Evaluate the network on the entire test set."""
-
+    model.compile(
+        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+        loss=keras.losses.SparseCategoricalCrossentropy(),
+        metrics=[keras.metrics.SparseCategoricalAccuracy()],
+    )
 
     print("Evaluating the model on the test data...")
 
@@ -203,3 +212,6 @@ def test(model, test_data):
 
     _, accuracy = model.evaluate(test_dataset)
     print(f"Test accuracy: {round(accuracy * 100, 2)}%")
+    return 6969, accuracy
+
+# model = create_tree_model()

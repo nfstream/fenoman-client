@@ -1,7 +1,13 @@
 """The data of the columns need to be read. This is a dummy version"""
 #TODO : read from a valid csv
 import pandas as pd
-train_data = pd.read_csv("###")
+import numpy as np
+
+csv = pd.read_csv("model/comnet14-flows.csv")
+csv = csv.iloc[: , :-5]
+df_split = np.array_split(csv,16)
+train_data = df_split[4]
+test_data = df_split[4]
 
 CSV_HEADER = [
             "id",
@@ -94,6 +100,7 @@ CSV_HEADER = [
             #"user_agent",
             #"content_type",
             ]
+
 
 NUMERIC_FEATURE_NAMES = [
                         "id",
@@ -198,7 +205,7 @@ IGNORE_COLUMN_NAMES = [
 ]
 '''
 # Drop last N columns of dataframe instead of ignore
-train_data = train_data.iloc[: , :-5]
+#train_data = train_data.iloc[: , :-5]
 
 
 # A list of the categorical feature names.

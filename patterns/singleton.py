@@ -1,7 +1,7 @@
-from typing import Any
+import typing
 
 
-def singleton(class_: Any) -> None:
+def singleton(class_: typing.Any) -> None:
     """
     This is the singleton pattern, which is a software design pattern that restricts the instantiation of a class to
     one single instance. This is useful when exactly one object is needed to coordinate actions across the system.
