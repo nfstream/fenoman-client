@@ -1,3 +1,4 @@
+import threading
 from os.path import exists
 
 import numpy as np
@@ -12,6 +13,7 @@ import requests
 import json
 import keras
 import model.headers
+from data_processor.streamer import Streamer
 
 def init_connection():
     identifier = "0"
@@ -102,12 +104,16 @@ def train(identifier):
 def main():
     identifier = init_connection()
 
-    data = [] #Should be loaded from Nfstream generated csv
+    streamer = Streamer("eth0")
+    connectorThread = threading.Thread(streamer.run())
+    connectorThread.run()
+
     treshold = 1000 #The minimum size of the csv, that is sufficient to train the model
-    if(len(data) >= treshold):
+    if(len(streamer.flows) >= treshold):
         command = "http://147.232.207.111:80/ready/" + str(identifier)
         requests.get(command)
         readyToTrainer(identifier)
+        streamer.flows = []
 
     #----------------------------------------------------------------
     '''csv = pd.read_csv("comnet14-flows.csv")

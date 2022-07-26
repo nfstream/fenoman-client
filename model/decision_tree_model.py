@@ -215,3 +215,7 @@ def test(model, test_data):
     return 6969, accuracy
 
 # model = create_tree_model()
+
+#TODO
+def predict(flow):
+    return "DNS"
