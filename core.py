@@ -14,13 +14,15 @@ import keras
 import model.headers
 
 def init_connection():
-    identifier = 0
+    identifier = "0"
     if exists("configuration/identifier.txt"):
         with open("configuration/identifier.txt") as f:
-            identifier = int(f.read())
+            identifier = f.read()
+        command = "http://147.232.207.111:80/login/" + str(identifier)
+        req = requests.get(command)
     else:
         req = requests.get("http://147.232.207.111:80/register")
-        identifier = int(req.text)
+        identifier = req.text
         with open("configuration/identifier.txt", "w") as f:
             f.write(req.text)
 
@@ -64,53 +66,48 @@ def push_model(trained_model):
     print("Posting the model: " + str(r.status_code))
 
 
-def push_weights(trained_model):
+def push_weights(trained_model, identifier):
     trained_model.save_weights("weights.h5")
     files = {'file': ("weights.h5", open('weights.h5', 'rb'))}
-    weight_endpoint = "http://147.232.207.111:80/send/weights"
+    weight_endpoint = "http://147.232.207.111:80/send/weights/" + identifier
     r2 = requests.post(weight_endpoint, files=files)
     print("Posting the weights: " + str(r2.status_code))
+
+def readyToTrainer(identifier):
+    while True:
+        command = "http://147.232.207.111:80/get/trainer"
+        req = requests.get(command)
+        if(req.text == identifier):
+            train(identifier)
+
+def train(identifier):
+    raw_model = load_server_model()
+    print("Server model loaded")
+    # To be deleted
+    test_data = model.headers.test_data
+    # model.decision_tree_model.test(raw_model, test_data)
+
+    print("Transfer training:")
+    train_data = model.headers.transfer_data
+    trained_model = model.decision_tree_model.train(raw_model, train_data)
+
+    print("Testing trained model:")
+    # To be deleted
+    model.decision_tree_model.test(trained_model, test_data)
+
+    push_model(trained_model)
+    push_weights(trained_model,identifier)
 
 
 def main():
     identifier = init_connection()
 
     data = [] #Should be loaded from Nfstream generated csv
-    treshold = 0 #The minimum size of the csv, that is sufficient to train the model
+    treshold = 1000 #The minimum size of the csv, that is sufficient to train the model
     if(len(data) >= treshold):
-        print("Ping the server that we are ready to train the model")
-
-    #Transfer learning with own data
-    """Simon = server"""
-    SimonSaysYes = True
-    if (SimonSaysYes):
-        raw_model = load_server_model()
-        print("Server model loaded")
-        #To be deleted
-        test_data = model.headers.test_data
-        #model.decision_tree_model.test(raw_model, test_data)
-
-        print("Transfer training:")
-        train_data = model.headers.transfer_data
-        trained_model = model.decision_tree_model.train(raw_model, train_data)
-
-        print("Testing trained model:")
-        #To be deleted
-        model.decision_tree_model.test(trained_model, test_data)
-
-        #Pushing new model to the server
-        #push_model(trained_model)
-
-        #Pushing the model weights to the server
-        #push_weights(trained_model)
-
-
-
-
-
-
-
-
+        command = "http://147.232.207.111:80/ready/" + str(identifier)
+        requests.get(command)
+        readyToTrainer(identifier)
 
     #----------------------------------------------------------------
     '''csv = pd.read_csv("comnet14-flows.csv")
