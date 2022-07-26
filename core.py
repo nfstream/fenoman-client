@@ -1,35 +1,49 @@
 import threading
 from os.path import exists
+import socket
 
 import numpy as np
 import pandas as pd
 
-#from data_processor.data_processor import data_processor
+# from data_processor.data_processor import data_processor
 import model.decision_tree_model
-#from model.model import nfstream_client
-#import flwr as fl
-#import pathlib
+# from model.model import nfstream_client
+# import flwr as fl
+# import pathlib
 import requests
 import json
 import keras
 import model.headers
+
 from data_processor.streamer import Streamer
 
-def init_connection():
+def init_connection(ClientSocket):
     identifier = "0"
     if exists("configuration/identifier.txt"):
         with open("configuration/identifier.txt") as f:
             identifier = f.read()
-        command = "http://147.232.207.111:80/login/" + str(identifier)
-        req = requests.get(command)
+        ClientSocket.send(str.encode(identifier))
     else:
-        req = requests.get("http://147.232.207.111:80/register")
-        identifier = req.text
+        ClientSocket.send(str.encode("register"))
+        resp = ClientSocket.recv(2048)
+        identifier = resp.decode('utf-8')
+        '''req = requests.get("http://147.232.207.111:80/register")
+        identifier = req.text'''
         with open("configuration/identifier.txt", "w") as f:
-            f.write(req.text)
+            f.write(identifier)
 
     return identifier
 
+def socket_listener(ClientSocket, identifier: str):
+    while True:
+        data = ClientSocket.recv(2048)
+        if not data:
+            break
+
+        message = data.decode('utf-8')
+
+        if message == "train":
+            train(identifier)
 
 def download_file(url, fname):
     local_filename = url.split('/')[-1]
@@ -55,7 +69,8 @@ def load_server_model():
     f.close()
 
     # Load model from json
-    raw_model = keras.models.model_from_json(server_model, custom_objects={'NeuralDecisionTree': model.decision_tree_model.NeuralDecisionTree})
+    raw_model = keras.models.model_from_json(server_model, custom_objects={
+        'NeuralDecisionTree': model.decision_tree_model.NeuralDecisionTree})
     raw_model.load_weights("weights.h5")
 
     return raw_model
@@ -75,13 +90,6 @@ def push_weights(trained_model, identifier):
     r2 = requests.post(weight_endpoint, files=files)
     print("Posting the weights: " + str(r2.status_code))
 
-def readyToTrainer(identifier):
-    while True:
-        command = "http://147.232.207.111:80/get/trainer"
-        req = requests.get(command)
-        if(req.text == identifier):
-            train(identifier)
-
 def train(identifier):
     raw_model = load_server_model()
     print("Server model loaded")
@@ -98,25 +106,31 @@ def train(identifier):
     model.decision_tree_model.test(trained_model, test_data)
 
     push_model(trained_model)
-    push_weights(trained_model,identifier)
+    push_weights(trained_model, identifier)
 
 
 def main():
-    identifier = init_connection()
+    ClientSocket = socket.socket()
+    print('Waiting for connection')
+    try:
+        ClientSocket.connect(("147.232.207.111", 8888))
+    except socket.error as e:
+        print(str(e))
 
-    streamer = Streamer("eth0")
-    connectorThread = threading.Thread(streamer.run())
-    connectorThread.run()
+    identifier = init_connection(ClientSocket)
+
+    threading.Thread(target=lambda: socket_listener(ClientSocket, identifier)).start()
+
+    streamer = Streamer("eno1")
+    threading.Thread(target=lambda: streamer.run()).start()
 
     treshold = 1000 #The minimum size of the csv, that is sufficient to train the model
     if(len(streamer.flows) >= treshold):
-        command = "http://147.232.207.111:80/ready/" + str(identifier)
-        requests.get(command)
-        readyToTrainer(identifier)
+        ClientSocket.send(b"ready")
         streamer.flows = []
-
-    #----------------------------------------------------------------
-    '''csv = pd.read_csv("comnet14-flows.csv")
+    '''
+    # ----------------------------------------------------------------
+    csv = pd.read_csv("comnet14-flows.csv")
     csv = csv.iloc[:, :-5]
     df_split = np.array_split(csv, 8)
     train_data = df_split[3]
@@ -124,13 +138,9 @@ def main():
 
     model = decision_tree_model.create_tree_model()
     # Start Flower client
-    client = nfstream_client(model, train_data, test_data)
+    client = nfstream_client(model, train_data, test_data)'''
 
-    fl.client.start_numpy_client(
-        server_address="localhost:8080",
-        client=client,
-        root_certificates=pathlib.Path("certificates/ca.crt").read_bytes(),
-    )'''
+    #ClientSocket.close()
 
 
 if __name__ == '__main__':
