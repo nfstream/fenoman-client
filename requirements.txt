@@ -1,9 +1,8 @@
 typing
-flwr
+flwr==1.0.0
 nfstream
 requests
 keras
 tensorflow
 numpy
 pandas
-json

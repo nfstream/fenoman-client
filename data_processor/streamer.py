@@ -1,6 +1,7 @@
 import nfstream
 import model.decision_tree_model
 
+
 class Streamer:
     def __init__(self, interface):
         self.streamer = nfstream.NFStreamer(source=interface, idle_timeout=20)
