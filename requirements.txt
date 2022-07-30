@@ -6,3 +6,5 @@ keras
 tensorflow
 numpy
 pandas
+sklearn
+scipy

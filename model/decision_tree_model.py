@@ -163,10 +163,6 @@ num_classes = len(TARGET_LABELS) + 1  # +1 sometimes it has problem that len(Tar
 
 
 def create_tree_model():
-    #inputs = create_model_inputs()
-    #features = encode_inputs(inputs)
-    #features = layers.BatchNormalization()(features)
-
     tree = NeuralDecisionTree()
 
     outputs = tree(tree.features)
@@ -174,7 +170,6 @@ def create_tree_model():
     return model
 
 
-# TODO : We might not want to save csv-s to every endpoint? Or just delete them after the training is done
 def train(model, train_data):
     """Train the network on the training set."""
     model.compile(
@@ -197,25 +192,3 @@ def train(model, train_data):
     print("Model training finished")
 
     return model
-
-
-def test(model, test_data):
-    """Evaluate the network on the entire test set."""
-
-    print("Evaluating the model on the test data...")
-
-    test_data_file = "test_data.csv"
-    test_data.to_csv(test_data_file, index=False, header=False)
-    test_dataset = get_dataset_from_csv(
-        test_data_file, shuffle=True, batch_size=batch_size
-    )
-
-    _, accuracy = model.evaluate(test_dataset)
-    print(f"Test accuracy: {round(accuracy * 100, 2)}%")
-    return 6969, accuracy
-
-# model = create_tree_model()
-
-#TODO
-def predict(flow):
-    return "DNS"
