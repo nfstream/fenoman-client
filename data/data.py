@@ -13,6 +13,10 @@ class Data:
     def __init__(self, df: str = TEST_DATAFRAME) -> None:
         self.__data = pd.read_csv(df)
 
+    def replace_data(self, df: str) -> None:
+        self.__data = pd.read_csv(df)
+
+    def preprocess_data(self) -> None:
         # TODO át kell ezt az egészet írni mert ez igy nem jó átemeltem a comnetből
 
         comnet14 = self.__data
@@ -57,13 +61,13 @@ class Data:
         comnet14_w_outliers['protocol'] = comnet14['protocol']  # Remove the legible encoding
         comnet14_w_outliers['expiration_id'] = comnet14['expiration_id']  # Remove the legible encoding
 
-        label_encoder = LabelEncoder()
-        comnet14_w_outliers['application_name'] = label_encoder.fit_transform(
-            comnet14_w_outliers['application_name'])  # LabelEncode text data
+        #label_encoder = LabelEncoder()
+        #comnet14_w_outliers['application_name'] = label_encoder.fit_transform(
+        #    comnet14_w_outliers['application_name'])  # LabelEncode text data
 
-        comnet14_wo_outliers = outlier_removal(comnet14_w_outliers)
-        target = comnet14_wo_outliers['application_name']
-        comnet14_wo_outliers = comnet14_wo_outliers.drop(['application_name'], axis='columns')
+        #comnet14_wo_outliers = outlier_removal(comnet14_w_outliers)
+        target = comnet14_w_outliers['application_name']
+        comnet14_wo_outliers = comnet14_w_outliers.drop(['application_name'], axis='columns')
 
         n_features = 12
 
