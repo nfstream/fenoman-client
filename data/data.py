@@ -12,13 +12,14 @@ from scipy import stats
 class Data:
     def __init__(self, df: str = TEST_DATAFRAME) -> None:
         self.__data = pd.read_csv(df)
+        self.__df = df
 
-    def replace_data(self, df: str) -> None:
+    def replace_data(self, df: str = TEST_DATAFRAME) -> None:
         self.__data = pd.read_csv(df)
+        self.__df = df
 
     def preprocess_data(self) -> None:
         # TODO át kell ezt az egészet írni mert ez igy nem jó átemeltem a comnetből
-
         comnet14 = self.__data
 
         self.__data_reduced = self.__data.drop(DROP_VARIABLES, axis='columns')
@@ -78,8 +79,6 @@ class Data:
             return X.iloc[:, cols]
 
         X_f = selector(f_classif, comnet14_wo_outliers, target, n_features)
-        print(X_f.columns)
-
         # scale
         comnet_scaled_minmax = MinMaxScaler().fit_transform(X_f)
 
