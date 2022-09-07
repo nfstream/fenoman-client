@@ -24,7 +24,7 @@ class Model:
             x_train,
             y_train,
             batch_size=64,
-            epochs=100,
+            epochs=1,
             # We pass some validation for
             # monitoring validation loss and metrics
             # at the end of each epoch
