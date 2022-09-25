@@ -116,6 +116,3 @@ class Data:
         x_val, y_val = __separate_target(validation)
 
         return x_train, y_train, x_val, y_val
-
-
-data = Data()

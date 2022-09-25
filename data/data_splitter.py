@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def split_dataset():
-    df = pd.read_csv('./comnet14-flows.csv')
+    df = pd.read_csv('comnet14-flows.csv')
     df.sample(frac=1).reset_index(drop=True)
 
     number_of_rows = 151145

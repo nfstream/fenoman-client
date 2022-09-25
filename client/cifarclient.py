@@ -1,11 +1,16 @@
 import flwr as fl
+from sklearn.preprocessing import LabelEncoder
 
 
 class CifarClient(fl.client.NumPyClient):
     def __init__(self, model, x_train, y_train, x_test, y_test):
         self.model = model()
-        self.x_train, self.y_train = x_train, y_train
-        self.x_test, self.y_test = x_test, y_test
+        lb = LabelEncoder()
+
+        self.y_test = lb.fit_transform(y_test)
+        self.y_train = lb.fit_transform(y_train)
+        self.x_train = x_train
+        self.x_test = x_test
 
     def get_properties(self, config):
         """Get properties of client."""
