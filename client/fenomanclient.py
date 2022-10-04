@@ -2,8 +2,9 @@ import flwr as fl
 from sklearn.preprocessing import LabelEncoder
 
 
-class CifarClient(fl.client.NumPyClient):
-    def __init__(self, model, x_train, y_train, x_test, y_test):
+class FenomanClient(fl.client.NumPyClient):
+    def __init__(self, model, x_train, y_train, x_test, y_test) -> None:
+        # TODO
         self.model = model()
         lb = LabelEncoder()
 
@@ -12,15 +13,18 @@ class CifarClient(fl.client.NumPyClient):
         self.x_train = x_train
         self.x_test = x_test
 
-    def get_properties(self, config):
+    def get_properties(self, config) -> Exception:
+        # TODO
         """Get properties of client."""
         raise Exception("Not implemented")
 
-    def get_parameters(self):
+    def get_parameters(self) -> Exception:
+        # TODO
         """Get parameters of the local model."""
         raise Exception("Not implemented (server-side parameter initialization)")
 
     def fit(self, parameters, config):
+        # TODO
         """Train parameters on the locally held training set."""
 
         # Update local model parameters
@@ -51,6 +55,7 @@ class CifarClient(fl.client.NumPyClient):
         return parameters_prime, num_examples_train, results
 
     def evaluate(self, parameters, config):
+        # TODO
         """Evaluate parameters on the locally held test set."""
 
         # Update local model with global parameters

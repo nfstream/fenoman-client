@@ -1,0 +1,5 @@
+URI = "http://127.0.0.1"
+BASE_URI = "/api/v1"
+CORE_PORT = "5000"
+FENOMAN_CLIENT_PORT = "8080"
+SECURE_MODE = False
