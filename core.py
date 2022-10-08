@@ -12,7 +12,12 @@ from configuration.core_configuration import *
 
 
 class Core:
-    def __init__(self, data_uri: str, uri: str = URI, core_port: str = CORE_PORT, base_uri: str = BASE_URI) -> None:
+    def __init__(self,
+                 data_uri: str,
+                 uri: str = URI,
+                 core_port: str = CORE_PORT,
+                 base_uri: str = BASE_URI,
+                 ocm_apim_key: str = OCM_APIM_KEY) -> None:
         """
         Initialization function for FeNOMan client instantiation.
 
@@ -20,6 +25,7 @@ class Core:
         :param uri: URI of the FeNOMan server
         :param core_port: port of the FeNOMan application server
         :param base_uri: application version base uri like /api/v1
+        :param ocm_apim_key: application key to access server resources
         :return: None
         """
         self.__uri = uri
@@ -31,6 +37,10 @@ class Core:
         self.__data.replace_data(data_uri)
         self.__data.preprocess_data()
 
+        self.__http_headers = {
+            'Ocp-Apim-Key': ocm_apim_key
+        }
+
     def __download_model(self, chosen_model: str) -> None:
         """
         Internal function to download the model from the server. The model is stored at file level temporarily on the
@@ -39,7 +49,8 @@ class Core:
         :param chosen_model: name of the model that must be downloaded from the server
         :return: None
         """
-        get_model_req = requests.get(f"{self.__base_uri}:{self.__core_port}{self.__base_uri}/get_model/{chosen_model}")
+        get_model_req = requests.get(f'{self.__base_uri}:{self.__core_port}{self.__base_uri}/get_model/{chosen_model}',
+                                     headers=self.__http_headers)
         open(f'model/temp/{chosen_model}.h5', 'wb').write(get_model_req.content)
 
     def train(self, uri: str = URI, port: str = FENOMAN_CLIENT_PORT, secure: bool = SECURE_MODE) -> None:
@@ -64,7 +75,7 @@ class Core:
             'client': client
         }
         if secure:
-            client_configuration['root_certificates'] = Path(".cache/certificates/ca.crt").read_bytes()
+            client_configuration['root_certificates'] = Path('.cache/certificates/ca.crt').read_bytes()
         fl.client.start_numpy_client(**client_configuration)
 
     def set_model(self, chosen_model: str) -> None:
@@ -97,7 +108,8 @@ class Core:
 
         :return: list
         """
-        get_models_req = requests.get(f'{self.__uri}:{self.__core_port}{self.__base_uri}/get_available_models')
+        get_models_req = requests.get(f'{self.__uri}:{self.__core_port}{self.__base_uri}/get_available_models',
+                                     headers=self.__http_headers)
         available_models = get_models_req.text.split(",")
 
         for x in range(len(available_models)):
