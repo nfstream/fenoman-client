@@ -17,7 +17,5 @@ if __name__ == '__main__':
     core.train()
 
 """
-1 - CSV nelkul is tudjon mukodni. Szoval live networkbol fel tudjon allni az egesz rendszer
 2 - Uj CSV-vel meg nem megy. Az mar maskepp van preprocessalva, illetva mas is a DS jellege
-3 - CORE.PY hibakat dob. Data osztalyra hivatkozva.
 """
