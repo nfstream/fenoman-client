@@ -1,3 +1,5 @@
+import pandas
+
 from patterns.singleton import singleton
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -16,7 +18,12 @@ class Data:
         :param df: dataframe input from NFStream
         """
         self.__data = pd.read_csv(df)
+        self.__n_features = n_features
 
+    def replace_data(self, df: str) -> None:
+        self.__data = pd.read_csv(df)
+
+    def preprocess_data(self) -> None:
         nfstream_data = self.__data
 
         self.__data_reduced = self.__data.drop(DROP_VARIABLES, axis='columns')
@@ -58,7 +65,7 @@ class Data:
             cols = selector.get_support(indices=True)
             return X.iloc[:, cols]
 
-        X_f = selector(f_classif, nfstream_wo_outliers, target, n_features)
+        X_f = selector(f_classif, nfstream_wo_outliers, target, self.__n_features)
         # scale
         nfstream_scaled = MinMaxScaler().fit_transform(X_f)
         nfstream_scaled = pd.DataFrame(nfstream_scaled,

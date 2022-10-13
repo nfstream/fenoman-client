@@ -1,20 +1,19 @@
 import flwr as fl
 import requests
 import pandas as pd
-
-from typing import Any
+from typing import Any, Tuple, Union
 from pathlib import Path
 from client.fenomanclient import FenomanClient
-import argparse
 from model.model import Model
 from data.data import Data
 from configuration.core_configuration import *
+from helpers.request_handler import request_handler
 
 
 class Core:
     def __init__(self,
                  data_uri: str,
-                 uri: str = URI,
+                 server_uri: str = URI,
                  core_port: str = CORE_PORT,
                  base_uri: str = BASE_URI,
                  ocm_apim_key: str = OCM_APIM_KEY) -> None:
@@ -28,7 +27,7 @@ class Core:
         :param ocm_apim_key: application key to access server resources
         :return: None
         """
-        self.__uri = uri
+        self.__server_uri = server_uri
         self.__core_port = core_port
         self.__base_uri = base_uri
 
@@ -41,17 +40,23 @@ class Core:
             'Ocp-Apim-Key': ocm_apim_key
         }
 
-    def __download_model(self, chosen_model: str) -> None:
+    def __download_model(self, chosen_model: str) -> Tuple[bool, str]:
         """
         Internal function to download the model from the server. The model is stored at file level temporarily on the
         computer not in memory at runtime.
 
         :param chosen_model: name of the model that must be downloaded from the server
-        :return: None
+        :return: state of the request success and the response as bytes or str
         """
-        get_model_req = requests.get(f'{self.__base_uri}:{self.__core_port}{self.__base_uri}/get_model/{chosen_model}',
-                                     headers=self.__http_headers)
-        open(f'model/temp/{chosen_model}.h5', 'wb').write(get_model_req.content)
+        get_model_req = requests.get(
+            f'{self.__server_uri}:{self.__core_port}{self.__base_uri}/get_model/{chosen_model}',
+            headers=self.__http_headers)
+        request_state, request_content = request_handler.process_response(get_model_req)
+        if request_state:
+            open(f'model/temp/{chosen_model}.h5', 'wb').write(request_content)
+            return True, ""
+        else:
+            return False, request_content.decode("utf-8")
 
     def train(self, uri: str = URI, port: str = FENOMAN_CLIENT_PORT, secure: bool = SECURE_MODE) -> None:
         """
@@ -78,7 +83,7 @@ class Core:
             client_configuration['root_certificates'] = Path('.cache/certificates/ca.crt').read_bytes()
         fl.client.start_numpy_client(**client_configuration)
 
-    def set_model(self, chosen_model: str) -> None:
+    def set_model(self, chosen_model: str) -> Tuple[bool, str]:
         """
         This method tells the Core which model to use, and retrieves the appropriate model data from the FeNOMan
         server.
@@ -86,8 +91,12 @@ class Core:
         :param chosen_model: name of the model that must be downloaded from the server
         :return: None
         """
-        self.__download_model(chosen_model)
-        self.__model = Model(f'model/temp/{chosen_model}.h5')
+        download_state, download_resp = self.__download_model(chosen_model)
+        if download_state:
+            self.__model = Model(f'model/temp/{chosen_model}.h5')
+            return True, "success"
+        else:
+            return False, download_resp
 
     def predict(self, prediction_data: pd.DataFrame) -> Any:
         """
@@ -101,38 +110,19 @@ class Core:
         classes = self.__model().predict_classes(prediction_data)
         return classes
 
-    def get_models(self) -> list:
+    def get_models(self) -> Tuple[bool, Union[list, str]]:
         """
         Returns the list of models available on the server. Each element in the list is a string and should be used to
         refer to the set_model() method to determine which model to use.
 
-        :return: list
+        :return: state and the list of responses
         """
-        get_models_req = requests.get(f'{self.__uri}:{self.__core_port}{self.__base_uri}/get_available_models',
-                                     headers=self.__http_headers)
-        available_models = get_models_req.text.split(",")
+        get_models_req = requests.get(f'{self.__server_uri}:{self.__core_port}{self.__base_uri}/get_available_models',
+                                      headers=self.__http_headers)
+        request_state, request_content = request_handler.process_response(get_models_req)
+        if request_state:
+            available_models = get_models_req.text.split(",")
+            return True, available_models
+        else:
+            return False, request_content.decode("utf-8")
 
-        for x in range(len(available_models)):
-            available_models[x] = available_models[x].split("\"")[1]
-
-        return available_models
-
-
-if __name__ == '__main__':
-    # TODO ezeket majd ki kell törölni nem kellenek
-    parser = argparse.ArgumentParser(description='Describe the csv number')
-    parser.add_argument('-i', dest='i', help='CSV number label')
-    args = parser.parse_args()
-    new_data_uri = f'./data/comnet14-flows-part-{args.i}.csv'
-
-    core = Core(new_data_uri)
-    available_models = core.get_models()
-
-    chosen_model = available_models[0]
-
-    core.set_model(chosen_model)
-
-    prediction_data = pd.DataFrame()
-    core.predict(prediction_data)
-
-    core.train()
