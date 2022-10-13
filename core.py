@@ -13,6 +13,7 @@ from helpers.request_handler import request_handler
 class Core:
     def __init__(self,
                  data_uri: str,
+                 server_protocol: str = SERVER_PROTOCOL,
                  server_uri: str = URI,
                  core_port: str = CORE_PORT,
                  base_uri: str = BASE_URI,
@@ -46,12 +47,14 @@ class Core:
         ```
 
         :param data_uri: path of the data on the local environment
-        :param uri: URI of the FeNOMan server
+        :param server_protocol: HTTP or HTTPS protocol of the FeNOMan server
+        :param server_uri: URI of the FeNOMan server
         :param core_port: port of the FeNOMan application server
         :param base_uri: application version base uri like /api/v1
         :param ocm_apim_key: application key to access server resources
         :return: None
         """
+        self.__server_protocol = server_protocol
         self.__server_uri = server_uri
         self.__core_port = core_port
         self.__base_uri = base_uri
@@ -74,7 +77,7 @@ class Core:
         :return: state of the request success and the response as bytes or str
         """
         get_model_req = requests.get(
-            f'{self.__server_uri}:{self.__core_port}{self.__base_uri}/get_model/{chosen_model}',
+            f'{self.__server_protocol}://{self.__server_uri}:{self.__core_port}{self.__base_uri}/get_model/{chosen_model}',
             headers=self.__http_headers)
         request_state, request_content = request_handler.process_response(get_model_req)
         if request_state:
@@ -142,7 +145,7 @@ class Core:
 
         :return: state and the list of responses
         """
-        get_models_req = requests.get(f'{self.__server_uri}:{self.__core_port}{self.__base_uri}/get_available_models',
+        get_models_req = requests.get(f'{self.__server_protocol}://{self.__server_uri}:{self.__core_port}{self.__base_uri}/get_available_models',
                                       headers=self.__http_headers)
         request_state, request_content = request_handler.process_response(get_models_req)
         if request_state:
