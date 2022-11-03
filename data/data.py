@@ -7,8 +7,6 @@ import os
 from sklearn.feature_selection import SelectKBest, f_classif
 from typing import Tuple, Any
 from .capturer import Capturer
-import time
-from configuration.nfstream_configuration import *
 
 
 @singleton
@@ -21,13 +19,18 @@ class Data:
         """
         if not os.path.exists(df):
             capturer = Capturer()
-            time.sleep(CAPTURE_TIMER_SECONDS)
             generated_pandas = capturer.generate_export()
-            del capturer
-
             self.__data = generated_pandas
         else:
-            self.__data = pd.read_csv(df)
+            if df.lower().endswith('.csv'):
+                self.__data = pd.read_csv(df)
+            elif df.lower().endswith('.pcap'):
+                capturer = Capturer(
+                    source=df,
+                    max_nflows=0
+                )
+                generated_pandas = capturer.generate_export()
+                self.__data = generated_pandas
         self.__n_features = n_features
 
     def replace_data(self, df: str) -> None:

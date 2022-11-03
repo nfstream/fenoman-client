@@ -7,7 +7,8 @@ class Capturer:
     def __init__(self,
                  source: str = SOURCE,
                  statistical_analysis: bool = STATISTICAL_ANALYSIS,
-                 splt_analysis: int = SPLT_ANALYSIS) -> None:
+                 splt_analysis: int = SPLT_ANALYSIS,
+                 max_nflows: int = MAX_NFLOWS) -> None:
         """
         This class is responsible for monitoring the network traffic with NFStreamer in case the user has not specified
         which CSV to run the training from or it does not exist.
@@ -17,16 +18,19 @@ class Capturer:
         :param statistical_analysis: 	Enable/Disable post-mortem flow statistical analysis.
         :param splt_analysis: 	Specify the sequence of first packets length for early statistical analysis. When set to
         0, splt_analysis is disabled.
+        :param max_nflows: Specify the number of maximum flows to capture before returning. Unset when equal to 0.
         :return: None
         """
         self.__source = source
         self.__statistical_analysis = statistical_analysis
         self.__splt_analysis = splt_analysis
+        self.__max_nflows = max_nflows
 
         self.__nsftreamer = NFStreamer(
             source=self.__source,
             statistical_analysis=self.__statistical_analysis,
-            splt_analysis=self.__splt_analysis
+            splt_analysis=self.__splt_analysis,
+            max_nflows=self.__max_nflows
         )
 
     def generate_export(self,

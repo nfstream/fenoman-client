@@ -1,6 +1,6 @@
 typing
 flwr==1.0.0
-nfstream
+nfstream==6.5.3
 requests
 keras
 tensorflow
