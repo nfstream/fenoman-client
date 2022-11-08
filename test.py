@@ -2,9 +2,7 @@ import core
 
 
 if __name__ == '__main__':
-    new_data_uri = f'./data/comnet14-flows-part-1.csv'
-
-    core = core.Core(new_data_uri)
+    core = core.Core()
     _, available_models = core.get_models()
 
     chosen_model = available_models[0]
@@ -15,7 +13,3 @@ if __name__ == '__main__':
     #core.predict(prediction_data)
 
     core.train()
-
-"""
-2 - Uj CSV-vel meg nem megy. Az mar maskepp van preprocessalva, illetva mas is a DS jellege
-"""

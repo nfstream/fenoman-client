@@ -7,12 +7,13 @@ from client.fenomanclient import FenomanClient
 from model.model import Model
 from data.data import Data
 from configuration.core_configuration import *
+from configuration.data_configuration import *
 from helpers.request_handler import request_handler
 
 
 class Core:
     def __init__(self,
-                 data_uri: str,
+                 data_uri: str = TEST_DATAFRAME,
                  server_protocol: str = SERVER_PROTOCOL,
                  server_uri: str = URI,
                  core_port: str = CORE_PORT,
