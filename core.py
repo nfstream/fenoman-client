@@ -95,7 +95,6 @@ class Core:
         :param secure: security mode turn on for SSL tunnel
         :return: None
         """
-        # TODO data set még szar meg kell oldani az is értelmes legyen
         self.__model.train()
         x_train, y_train, x_test, y_test = self.__data.load_data()
 
