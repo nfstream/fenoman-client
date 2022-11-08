@@ -60,9 +60,7 @@ class Core:
         self.__core_port = core_port
         self.__base_uri = base_uri
 
-        # TODO data nem lesz igy jÓ
-        self.__data = Data()
-        self.__data.replace_data(data_uri)
+        self.__data = Data(data_uri)
         self.__data.preprocess_data()
 
         self.__http_headers = {
