@@ -6,16 +6,16 @@ from configuration.client_configuration import *
 
 
 class FenomanClient(fl.client.NumPyClient):
-    def __init__(self, model: Model, x_train, y_train, x_test, y_test) -> None:
+    def __init__(self, model: Model, x_train: Any, y_train: Any, x_test: Any, y_test: Any) -> None:
         """
         A NumPyClient based NFStream compliant instantiation of the flower component can be done with this to make it
         compatible with FeNOMan.
 
         :param model: input model that is downloaded from the FeNOMan server
-        :param x_train:
-        :param y_train:
-        :param x_test:
-        :param y_test:
+        :param x_train: Teaching dataset containing the features.
+        :param y_train: Target variable for teaching.
+        :param x_test: Testing dataset containing the features.
+        :param y_test: Target variable for testing.
         :return: None
         """
         self.model = model()
@@ -26,18 +26,20 @@ class FenomanClient(fl.client.NumPyClient):
         self.x_train = x_train
         self.x_test = x_test
 
-    def get_properties(self, config: Any) -> Exception:
+    def get_properties(self, config: dict) -> Exception:
         """
         Return properties of the client. Currently, unsupported method.
 
-        :param config: Any
+        :param config: Configuration parameters which allow the server to influence training on the client. It can be
+        used to communicate arbitrary values from the server to the client, for example, to set the number of (local)
+        training epochs.
         :return: Exception
         """
         raise Exception("Not implemented")
 
     def get_parameters(self) -> Exception:
         """
-        Returns the parameter of the local model. Currently, unsopported method.
+        Returns the parameter of the local model. Currently, unsupported method.
 
         :return: Exception
         """
@@ -54,11 +56,11 @@ class FenomanClient(fl.client.NumPyClient):
         # Update local model parameters
         self.model.set_weights(parameters)
 
-        # Get hyperparameters for this round
+        # Get hyper parameters for this round
         batch_size: int = config["batch_size"]
         epochs: int = config["local_epochs"]
 
-        # Train the model using hyperparameters from config
+        # Train the model using hyper parameters from config
         history = self.model.fit(
             self.x_train,
             self.y_train,
@@ -78,13 +80,13 @@ class FenomanClient(fl.client.NumPyClient):
         }
         return parameters_prime, num_examples_train, results
 
-    def evaluate(self, parameters, config) -> Union[Any, int, dict]:
+    def evaluate(self, parameters: Any, config: dict) -> Union[Any, int, dict]:
         """
         Evaluate parameters on the locally held test set.
 
         :param parameters: model parameters
         :param config: model configuration
-        :return: model paramters on the local test data and return results
+        :return: model parameters on the local test data and return results
         """
         # Update local model with global parameters
         self.model.set_weights(parameters)

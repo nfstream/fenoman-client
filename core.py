@@ -13,7 +13,7 @@ from helpers.request_handler import request_handler
 
 class Core:
     def __init__(self,
-                 data_uri: str = TEST_DATAFRAME,
+                 data_uri: str = DATA_URI,
                  server_protocol: str = SERVER_PROTOCOL,
                  server_uri: str = URI,
                  core_port: str = CORE_PORT,

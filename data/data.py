@@ -11,11 +11,13 @@ from .capturer import Capturer
 
 @singleton
 class Data:
-    def __init__(self, df: str = TEST_DATAFRAME, n_features: int = N_FEATURES) -> None:
+    def __init__(self, df: str = DATA_URI, n_features: int = N_FEATURES) -> None:
         """
         This Data class is implemented directly for NFStream use-cases.
 
-        :param df: dataframe input from NFStream
+        :param df: In the case of an input file which may have a .csv or .pcap extension, the path.
+        :param n_features: The number of identifiable features in the data set that are used in the model training.
+        :return: None
         """
         if not os.path.exists(df):
             capturer = Capturer()
@@ -31,12 +33,35 @@ class Data:
                 )
                 generated_pandas = capturer.generate_export()
                 self.__data = generated_pandas
+            else:
+                raise Exception('Unsupported Data file!')
         self.__n_features = n_features
 
     def replace_data(self, df: str) -> None:
-        self.__data = pd.read_csv(df)
+        """
+        Method to replace the existing data file with a new one.
+
+        :param df: New data URI.
+        :return: None
+        """
+        if df.lower().endswith('.csv'):
+            self.__data = pd.read_csv(df)
+        elif df.lower().endswith('.pcap'):
+            capturer = Capturer(
+                source=df,
+                max_nflows=0
+            )
+            generated_pandas = capturer.generate_export()
+            self.__data = generated_pandas
+        else:
+            raise Exception('Unsupported Data file!')
 
     def preprocess_data(self) -> None:
+        """
+        Preprocessing steps that must be applied to the data in oder to use in the model training.
+
+        :return: None
+        """
         nfstream_data = self.__data
 
         self.__data_reduced = self.__data.drop(DROP_VARIABLES, axis='columns')
@@ -71,7 +96,7 @@ class Data:
             :param X: input fields
             :param y: prediction field
             :param n_features: number of features
-            :return:
+            :return: dataframe of selected fields
             """
             selector = SelectKBest(score_function, k=n_features)
             selector.fit_transform(X, y)

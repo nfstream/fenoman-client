@@ -24,7 +24,7 @@ class Model:
 
         :return: None
         """
-        # TODO nem jó mert ez itt nem független a szervertől lol
+        # TODO the server should send the labelencoding steps how to apply on the local clients
         lb = LabelEncoder()
         data = Data()
         x_train, y_train, x_val, y_val = data.load_data()
