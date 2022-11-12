@@ -85,7 +85,6 @@ These steps are shown in the example.py file.
 ### Authors
 * Adrian Pekar
 * Zied Aouini
-* Gergely Biczók
 * Laszlo Arpad Makara
 * Balint Bicski
 * Marcell Szoby
@@ -93,8 +92,6 @@ These steps are shown in the example.py file.
 
 ## Acknowledgement
 Supported by the GÉANT Innovation Programme 2022.
-This work was supported by the János Bolyai Research Scholarship of the Hungarian Academy of Sciences.
-The research reported in this paper is part of project no. ÚNKP-22-5, BME-NVA-02 (TKP2021), and 138903 (OTKA FK_21) supported by the Hungarian Ministry of Innovation and Technology from the source of the National Research, Development and Innovation Fund.
 
 ## License
 This project is licensed under the LGPLv3 license - see the [License](LICENSE) file for details.
