@@ -2,111 +2,132 @@ from patterns.singleton import singleton
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from configuration.data_configuration import *
-from sklearn.preprocessing import MinMaxScaler, Normalizer, LabelEncoder
-import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+import os
 from sklearn.feature_selection import SelectKBest, f_classif
-from scipy import stats
+from typing import Tuple, Any
+from .capturer import Capturer
 
 
 @singleton
 class Data:
-    def __init__(self, df: str = TEST_DATAFRAME) -> None:
-        self.__data = pd.read_csv(df)
-        self.__df = df
+    def __init__(self, df: str = DATA_URI, n_features: int = N_FEATURES) -> None:
+        """
+        This Data class is implemented directly for NFStream use-cases.
 
-    def replace_data(self, df: str = TEST_DATAFRAME) -> None:
-        self.__data = pd.read_csv(df)
-        self.__df = df
+        :param df: In the case of an input file which may have a .csv or .pcap extension, the path.
+        :param n_features: The number of identifiable features in the data set that are used in the model training.
+        :return: None
+        """
+        if not os.path.exists(df):
+            capturer = Capturer()
+            generated_pandas = capturer.generate_export()
+            self.__data = generated_pandas
+        else:
+            if df.lower().endswith('.csv'):
+                self.__data = pd.read_csv(df)
+            elif df.lower().endswith('.pcap'):
+                capturer = Capturer(
+                    source=df,
+                    max_nflows=0
+                )
+                generated_pandas = capturer.generate_export()
+                self.__data = generated_pandas
+            else:
+                raise Exception('Unsupported Data file!')
+        self.__n_features = n_features
+
+    def replace_data(self, df: str) -> None:
+        """
+        Method to replace the existing data file with a new one.
+
+        :param df: New data URI.
+        :return: None
+        """
+        if df.lower().endswith('.csv'):
+            self.__data = pd.read_csv(df)
+        elif df.lower().endswith('.pcap'):
+            capturer = Capturer(
+                source=df,
+                max_nflows=0
+            )
+            generated_pandas = capturer.generate_export()
+            self.__data = generated_pandas
+        else:
+            raise Exception('Unsupported Data file!')
 
     def preprocess_data(self) -> None:
-        # TODO át kell ezt az egészet írni mert ez igy nem jó átemeltem a comnetből
-        comnet14 = self.__data
+        """
+        Preprocessing steps that must be applied to the data in oder to use in the model training.
+
+        :return: None
+        """
+        nfstream_data = self.__data
 
         self.__data_reduced = self.__data.drop(DROP_VARIABLES, axis='columns')
-        comnet14_reduced = self.__data_reduced
+        nfstream_data_reduced = self.__data_reduced
 
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='bidirectional')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='first_seen')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='last_seen')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='_syn_')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='_ece_')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='_ack_')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='_rst_')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='_cwr_')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='_urg_')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='_psh_')), axis='columns')
-        comnet14_reduced = comnet14_reduced.drop(list(comnet14_reduced.filter(regex='_fin_')), axis='columns')
+        for regex_filter in REDUCE_REGEX_VARIABLES:
+            nfstream_data_reduced = nfstream_data_reduced.drop(
+                list(nfstream_data_reduced.filter(regex=regex_filter)), axis='columns'
+            )
 
         # Give meaning to the values of the protocol feature
-        comnet14_reduced['protocol'] = comnet14_reduced['protocol'].map({6: 'TCP', 17: 'UDP'})
+        nfstream_data_reduced['protocol'] = nfstream_data_reduced['protocol'].map({6: 'TCP', 17: 'UDP'})
         # Give meaning to the values of the expiration_id feature
-        comnet14_reduced['expiration_id'] = comnet14_reduced['expiration_id'].map({0: 'idle', 1: 'active'})
+        nfstream_data_reduced['expiration_id'] = nfstream_data_reduced['expiration_id'].map({0: 'idle', 1: 'active'})
 
         # Drop non TCP or UDP traffic
-        comnet14_reduced = comnet14_reduced.dropna()
-        comnet14 = comnet14[comnet14['protocol'] != 1]
+        nfstream_data_reduced = nfstream_data_reduced.dropna()
+        nfstream_data = nfstream_data[nfstream_data['protocol'] != 1]
 
-        def outlier_removal(df):
-            # Calculate the Z-scores
-            z = np.abs(stats.zscore(df)).fillna(
-                0)  # Constant results in NaN ==> change to 0 otherwise would drop every row
+        nfstream_w_outliers = nfstream_data_reduced.copy()
+        nfstream_w_outliers['protocol'] = nfstream_data['protocol']  # Remove the legible encoding
+        nfstream_w_outliers['expiration_id'] = nfstream_data['expiration_id']  # Remove the legible encoding
 
-            # By setting variable 'coef', different number of outliers will be eliminated
-            # Here we use the Three Sigma Rule
-            coef = 3
-            df_z = df[(z < coef).all(axis=1)]
+        target = nfstream_w_outliers['application_name']
+        nfstream_wo_outliers = nfstream_w_outliers.drop(['application_name'], axis='columns')
 
-            return df_z
+        def selector(score_function, X, y, n_features: int) -> pd.DataFrame:
+            """
+            Selects the K best element.
 
-        comnet14_w_outliers = comnet14_reduced.copy()
-        comnet14_w_outliers['protocol'] = comnet14['protocol']  # Remove the legible encoding
-        comnet14_w_outliers['expiration_id'] = comnet14['expiration_id']  # Remove the legible encoding
-
-        #label_encoder = LabelEncoder()
-        #comnet14_w_outliers['application_name'] = label_encoder.fit_transform(
-        #    comnet14_w_outliers['application_name'])  # LabelEncode text data
-
-        #comnet14_wo_outliers = outlier_removal(comnet14_w_outliers)
-        target = comnet14_w_outliers['application_name']
-        comnet14_wo_outliers = comnet14_w_outliers.drop(['application_name'], axis='columns')
-
-        n_features = 12
-
-        def selector(score_function, X, y, n_features):
+            :param score_function: function to calculate out the score
+            :param X: input fields
+            :param y: prediction field
+            :param n_features: number of features
+            :return: dataframe of selected fields
+            """
             selector = SelectKBest(score_function, k=n_features)
             selector.fit_transform(X, y)
             cols = selector.get_support(indices=True)
             return X.iloc[:, cols]
 
-        X_f = selector(f_classif, comnet14_wo_outliers, target, n_features)
+        X_f = selector(f_classif, nfstream_wo_outliers, target, self.__n_features)
         # scale
-        comnet_scaled_minmax = MinMaxScaler().fit_transform(X_f)
-
-        comnet_scaled_minmax = pd.DataFrame(comnet_scaled_minmax,
+        nfstream_scaled = MinMaxScaler().fit_transform(X_f)
+        nfstream_scaled = pd.DataFrame(nfstream_scaled,
                                             columns=X_f.columns,
                                             index=X_f.index)
-
-        # normalize
-        comnet_normalized = Normalizer().fit_transform(X_f)
-
-        comnet_normalized = pd.DataFrame(comnet_normalized,
-                                         columns=X_f.columns,
-                                         index=X_f.index)
 
         protocol_df = X_f['protocol'].map({6: 'TCP', 17: 'UDP'})
         protocol_encoded = pd.get_dummies(protocol_df, prefix='protocol')
 
         # Drop the non-encoded feature
-        comnet_scaled_minmax_encoded = comnet_scaled_minmax.drop(['protocol'], axis='columns')
-        comnet_normalized_encoded = comnet_normalized.drop(['protocol'], axis='columns')
+        nfstream_scaled_minmax_encoded = nfstream_scaled.drop(['protocol'], axis='columns')
 
         # Add to scaled DataFrames
-        comnet_scaled_minmax_encoded = comnet_scaled_minmax_encoded.join(protocol_encoded)
-        comnet_normalized_encoded = comnet_normalized_encoded.join(protocol_encoded)
+        nfstream_scaled_minmax_encoded = nfstream_scaled_minmax_encoded.join(protocol_encoded)
 
-        self.__data = comnet_scaled_minmax_encoded.join(target)
+        self.__data = nfstream_scaled_minmax_encoded.join(target)
 
-    def load_data(self, target_field: str = TARGET_VARIABLE):
+    def load_data(self, target_field: str = TARGET_VARIABLE) -> Tuple[Any, Any, Any, Any]:
+        """
+        Load train and validation test data split.
+
+        :param target_field: y field
+        :return: train and validation split
+        """
         train, validation = train_test_split(self.__data, test_size=TRAIN_VALIDATION_SPLIT)
 
         def __separate_target(df):
@@ -116,3 +137,6 @@ class Data:
         x_val, y_val = __separate_target(validation)
 
         return x_train, y_train, x_val, y_val
+
+
+data = Data()
