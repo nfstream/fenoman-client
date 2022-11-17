@@ -86,6 +86,7 @@ These steps are shown in the example.py file.
 * Adrian Pekar
 * Zied Aouini
 * Laszlo Arpad Makara
+* Gergely Biczok
 * Balint Bicski
 * Marcell Szoby
 * Mate Simko
