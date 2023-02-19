@@ -1,5 +1,6 @@
 import flwr as fl
 import requests
+import json
 import pandas as pd
 from typing import Any, Tuple, Union
 from pathlib import Path
@@ -63,6 +64,9 @@ class Core:
         self.__data = Data(data_uri)
         self.__data.preprocess_data()
 
+        self.__port_mapping = None
+        self.__fenoman_client_port = None
+
         self.__http_headers = {
             'Ocp-Apim-Key': ocm_apim_key
         }
@@ -85,7 +89,7 @@ class Core:
         else:
             return False, request_content.decode("utf-8")
 
-    def train(self, uri: str = URI, port: str = FENOMAN_CLIENT_PORT, secure: bool = SECURE_MODE) -> None:
+    def train(self, uri: str = URI, secure: bool = SECURE_MODE) -> Tuple[bool, str]:
         """
         Using the train() method, we can train the set model along the federated learning paradigm. In the configuration
         it is important to specify the port number of the flower server and not the port of the application server.
@@ -101,13 +105,19 @@ class Core:
         # Start Flower client
         client = FenomanClient(self.__model, x_train, y_train, x_test, y_test)
 
+        if self.__fenoman_client_port is None:
+            return False, "The set_model() method should be called first!"
+
         client_configuration = {
-            'server_address': f'{uri}:{port}',
+            'server_address': f'{uri}:{self.__fenoman_client_port}',
             'client': client
         }
+
         if secure:
             client_configuration['root_certificates'] = Path('.cache/certificates/ca.crt').read_bytes()
         fl.client.start_numpy_client(**client_configuration)
+
+        return True, "success"
 
     def set_model(self, chosen_model: str) -> Tuple[bool, str]:
         """
@@ -120,6 +130,13 @@ class Core:
         download_state, download_resp = self.__download_model(chosen_model)
         if download_state:
             self.__model = Model(f'model/temp/{chosen_model}.h5')
+
+            if self.__port_mapping is None:
+                return False, "The get_models() method should be called first!"
+
+            id_of_model = self.__port_mapping['models'].index(chosen_model)
+            self.__fenoman_client_port = self.__port_mapping['ports'][id_of_model]
+
             return True, "success"
         else:
             return False, download_resp
@@ -147,7 +164,8 @@ class Core:
                                       headers=self.__http_headers)
         request_state, request_content = request_handler.process_response(get_models_req)
         if request_state:
-            available_models = get_models_req.text.split(",")
+            self.__port_mapping = json.loads(request_content.decode("utf-8"))
+            available_models = self.__port_mapping['models']
             return True, available_models
         else:
             return False, request_content.decode("utf-8")

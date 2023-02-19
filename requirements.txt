@@ -1,5 +1,5 @@
 typing
-flwr==1.0.0
+flwr==1.1.0
 nfstream==6.5.3
 requests
 keras
