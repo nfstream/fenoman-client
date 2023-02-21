@@ -9,3 +9,4 @@ TRAIN_VALIDATION_SPLIT = 0.2
 N_FEATURES = 12
 REDUCE_REGEX_VARIABLES = ['bidirectional', 'first_seen', 'last_seen', '_syn_', '_ece_', '_ack_', '_rst_', '_cwr_',
                           '_urg_', '_psh_', '_fin_']
+LOW_MEMORY = False

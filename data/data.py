@@ -37,6 +37,9 @@ class Data:
                 raise Exception('Unsupported Data file!')
         self.__n_features = n_features
 
+        self.__field_names = []
+        self.__target_names = []
+
     def replace_data(self, df: str) -> None:
         """
         Method to replace the existing data file with a new one.
@@ -45,7 +48,7 @@ class Data:
         :return: None
         """
         if df.lower().endswith('.csv'):
-            self.__data = pd.read_csv(df)
+            self.__data = pd.read_csv(df, low_memory=LOW_MEMORY)
         elif df.lower().endswith('.pcap'):
             capturer = Capturer(
                 source=df,
@@ -63,6 +66,7 @@ class Data:
         :return: None
         """
         nfstream_data = self.__data
+        self.__target_names = nfstream_data['application_name'].unique()
 
         self.__data_reduced = self.__data.drop(DROP_VARIABLES, axis='columns')
         nfstream_data_reduced = self.__data_reduced
@@ -101,6 +105,7 @@ class Data:
             selector = SelectKBest(score_function, k=n_features)
             selector.fit_transform(X, y)
             cols = selector.get_support(indices=True)
+            self.__field_names = [X.columns[a] for a in cols]
             return X.iloc[:, cols]
 
         X_f = selector(f_classif, nfstream_wo_outliers, target, self.__n_features)
@@ -137,6 +142,22 @@ class Data:
         x_val, y_val = __separate_target(validation)
 
         return x_train, y_train, x_val, y_val
+
+    def get_field_names(self) -> list:
+        """
+        This function return all the column field names.
+
+        :return: list of column field names
+        """
+        return self.__field_names
+
+    def get_target_names(self) -> list:
+        """
+        This function returns all the unique names that appears on the target fields.
+
+        :return: target names as list
+        """
+        return self.__target_names
 
 
 data = Data()

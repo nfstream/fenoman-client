@@ -2,11 +2,12 @@ import flwr as fl
 import requests
 import json
 import pandas as pd
+import numpy as np
 from typing import Any, Tuple, Union
 from pathlib import Path
 from client.fenomanclient import FenomanClient
 from model.model import Model
-from data.data import Data
+from data.data import Data, data
 from configuration.core_configuration import *
 from configuration.data_configuration import *
 from helpers.request_handler import request_handler
@@ -141,7 +142,7 @@ class Core:
         else:
             return False, download_resp
 
-    def predict(self, prediction_data: pd.DataFrame) -> Any:
+    def predict(self, prediction_data: str) -> Any:
         """
         In case you want to request a prediction, you can use this function after you have instantiated the FeNOMan
         Core and set the desired model with set_model(). The set_model() expects the model name which can be retrieved
@@ -150,7 +151,14 @@ class Core:
         :param prediction_data: input for which the predictions should be made
         :return: labeled classes
         """
-        classes = self.__model().predict_classes(prediction_data)
+        data.replace_data(prediction_data)
+        data.preprocess_data()
+        prediction_data_preprocessed_part1,_,prediction_data_preprocessed_part2,_ = data.load_data()
+        prediction_data_preprocessed = pd.concat(
+            [prediction_data_preprocessed_part1, prediction_data_preprocessed_part2]
+        )
+
+        classes = self.__model().predict(prediction_data_preprocessed)
         return classes
 
     def get_models(self) -> Tuple[bool, Union[list, str]]:
@@ -170,3 +178,15 @@ class Core:
         else:
             return False, request_content.decode("utf-8")
 
+    @staticmethod
+    def get_decode_classes(predictions) -> list:
+        """
+        This function gives back the actual class names based on the dataset target field.
+        TODO future development required in order to eliminate the dataset target field extraction.
+
+        :param predictions: prediction matrices from the core.predict() function.
+        :return: list of decoded classes
+        """
+        field_names = data.get_target_names()
+        prediction_fields = [field_names[np.argmax(i)] for i in predictions]
+        return prediction_fields
